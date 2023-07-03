@@ -1,1 +1,7 @@
-//
+process number = 12 
+create file /Shayan/Ali/Reza/note.txt 
+Delete File /Shayan/Note.pdf , create sth
+read File IUST.pdf  , Open file /  
+create file /Shayan/Ali/Reza/note.txt 
+Delete File /Shayan/Note.pdf , create sth
+read File IUST.pdf  , Open file /  

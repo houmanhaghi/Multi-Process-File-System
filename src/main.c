@@ -4,20 +4,131 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 
 #define MAX_LINE_LENGTH 256
 #define STRING_ARRAY_SIZE 256
 #define CONFIG "configs.txt"
 #define len(arr) (int)(sizeof(arr) / sizeof(arr[0]))
+#define MAX_ARRAY_SIZE 100
+#define MAX_STRING_LENGTH 50
+#define MAX_FOLDER_SIZE_BYTES 1000000000 // Set your desired folder size limit in bytes here (e.g., 1GB).
 
 
 struct statvfs vfs_stat;
 
 
-char all_dirs[STRING_ARRAY_SIZE][STRING_ARRAY_SIZE] = 
-    {"/root/bin/","/root/dev/","/root/etc/","/root/home/","/root/mnt/",
-    "/root/proc/","/root/tmp/","/root/usr/"};
+struct permissions {
+    char read[MAX_ARRAY_SIZE][MAX_STRING_LENGTH];
+    char write[MAX_ARRAY_SIZE][MAX_STRING_LENGTH];
+};
+
+
+struct meta_data {
+    char dir_path[STRING_ARRAY_SIZE];
+    long int total_size;
+    long int free_size;
+    long int number_of_files;
+    struct permissions permission;
+};
+
+
+
+struct meta_data meta[9] ={
+    {
+        .dir_path = "/root/",
+        .total_size = 100000000,
+        .free_size = 0,
+        .number_of_files = 8,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2", "t3", "t4"}
+        }
+    },
+    {
+        .dir_path = "/root/bin/",
+        .total_size = 50000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/dev/",
+        .total_size = 20000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t4", "t5"}
+        }
+    },
+    {
+        .dir_path = "/root/etc/",
+        .total_size = 2000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2"}
+        }
+    },
+    {
+        .dir_path = "/root/home/",
+        .total_size = 100000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t1", "t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/mnt/",
+        .total_size = 3000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3"},
+            .write = {"t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/proc/",
+        .total_size = 5000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t4", "t5"},
+            .write = {"t0", "t1", "t4"}
+        }
+    },
+    {
+        .dir_path = "/root/tmp/",
+        .total_size = 25000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3"},
+            .write = {"t0", "t1"}
+        }
+    },
+    {
+        .dir_path = "/root/usr/",
+        .total_size = 40000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1"},
+            .write = {"t0"}
+        }
+    }
+};
 
 
 char* strip(char* str) {
@@ -40,6 +151,73 @@ char* strip(char* str) {
 }
 
 
+int countFilesRecursively(const char* path) {
+    int count = 0;
+    struct dirent *entry;
+    DIR *dir = opendir(path);
+
+    if (dir == NULL) {
+        perror("opendir");
+        return -1;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue; // Skip current and parent directories
+        }
+
+        char entryPath[512];
+        snprintf(entryPath, sizeof(entryPath), "%s/%s", path, entry->d_name);
+
+        struct stat statBuf;
+        if (stat(entryPath, &statBuf) == -1) {
+            perror("stat");
+            continue;
+        }
+
+        if (S_ISDIR(statBuf.st_mode)) {
+            count += countFilesRecursively(entryPath); // Recursively count files in sub-directory
+        } else if (S_ISREG(statBuf.st_mode)) {
+            count++; // Increment count if it's a regular file
+        }
+    }
+
+    closedir(dir);
+    return count;
+}
+
+
+long int getFolderSize(const char *path) {
+    struct stat statbuf;
+    if (stat(path, &statbuf) == -1) {
+        return -1;
+    }
+
+    if (S_ISREG(statbuf.st_mode)) {
+        return statbuf.st_size;
+    }
+
+    DIR *dir = opendir(path);
+    if (!dir) {
+        return -1;
+    }
+
+    long long int total_size = 0;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            char child_path[1024];
+            snprintf(child_path, sizeof(child_path), "%s/%s", path, entry->d_name);
+            total_size += getFolderSize(child_path);
+        }
+    }
+    closedir(dir);
+
+    return total_size;
+}
+
+
+
 
 void update_meta()
 {
@@ -51,22 +229,16 @@ void update_meta()
     }
 
     int index = 0;
-    while(strcmp(all_dirs[index], "\0") != 0)
+    while(strcmp(meta[index].dir_path, "\0") != 0)
     {
         FILE *file;
         char directory_path[STRING_ARRAY_SIZE] = "";
         strcat(directory_path, path);
-        strcat(directory_path, all_dirs[index]);
-        char  meta_path[STRING_ARRAY_SIZE] = "";
+        strcat(directory_path, meta[index].dir_path);
+        char meta_path[STRING_ARRAY_SIZE] = "";
         strcat(meta_path ,directory_path);
         strcat(meta_path, ".meta");
 
-
-        // Get the file system statistics using statvfs
-        if (statvfs(directory_path, &vfs_stat) == -1) {
-            perror("Error getting file system statistics");
-            exit(1);
-        }
 
         file = fopen(meta_path, "w");
         
@@ -74,18 +246,35 @@ void update_meta()
         if (file == NULL) {
         perror("Error opening the file");
         exit(1);
-    }
+        }
+
+        long int current_size = getFolderSize(directory_path);
+        if (current_size == -1) {
+            printf("Error: Unable to get the folder size.\n");
+            exit(1);
+        }
+
+
         // Print directory metadata
         fprintf(file, "Directory: %s\n", directory_path);
-        fprintf(file, "Total size: %lu bytes\n", vfs_stat.f_frsize * vfs_stat.f_blocks);
-        fprintf(file, "Free space: %lu bytes\n", vfs_stat.f_frsize * vfs_stat.f_bfree );
-        fprintf(file, "Number of files: %lu\n", vfs_stat.f_files);
+
+        // fprintf(file, "Total size: %lu bytes\n", vfs_stat.f_frsize * vfs_stat.f_blocks);
+
+        fprintf(file, "Total size: %lu bytes\n", meta[index].total_size);
+
+        fprintf(file, "Free space: %lu bytes\n", meta[index].total_size - current_size );
+        meta[index].free_size = meta[index].total_size - current_size;
+
+        fprintf(file, "Number of files: %d\n", countFilesRecursively(directory_path)-1);
+        meta[index].number_of_files = countFilesRecursively(directory_path)-1;
 
         fclose(file);
         index++;
     }
     
 }
+
+
 
 
 // implement function to do CRUD tasks
@@ -170,10 +359,7 @@ int main()
             commands_count++;
         }
 
-        // Print the commands stored in the commands array
-        // for (int a = 0; a < i; a++) {
-        //     printf("%s\n", commands[a]);
-        // }
+        
     }
 
 
