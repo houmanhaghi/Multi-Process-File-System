@@ -21,6 +21,115 @@
 struct statvfs vfs_stat;
 
 
+struct permissions {
+    char read[MAX_ARRAY_SIZE][MAX_STRING_LENGTH];
+    char write[MAX_ARRAY_SIZE][MAX_STRING_LENGTH];
+};
+
+
+struct meta_data {
+    char dir_path[STRING_ARRAY_SIZE];
+    long int total_size;
+    long int free_size;
+    long int number_of_files;
+    struct permissions permission;
+};
+
+
+
+struct meta_data meta[9] ={
+    {
+        .dir_path = "/root/",
+        .total_size = 100000000,
+        .free_size = 0,
+        .number_of_files = 8,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2", "t3", "t4"}
+        }
+    },
+    {
+        .dir_path = "/root/bin/",
+        .total_size = 50000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/dev/",
+        .total_size = 20000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t4", "t5"}
+        }
+    },
+    {
+        .dir_path = "/root/etc/",
+        .total_size = 2000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t0", "t1", "t2"}
+        }
+    },
+    {
+        .dir_path = "/root/home/",
+        .total_size = 100000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .write = {"t1", "t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/mnt/",
+        .total_size = 3000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3"},
+            .write = {"t2", "t3"}
+        }
+    },
+    {
+        .dir_path = "/root/proc/",
+        .total_size = 5000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t4", "t5"},
+            .write = {"t0", "t1", "t4"}
+        }
+    },
+    {
+        .dir_path = "/root/tmp/",
+        .total_size = 25000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1", "t2", "t3"},
+            .write = {"t0", "t1"}
+        }
+    },
+    {
+        .dir_path = "/root/usr/",
+        .total_size = 40000000,
+        .free_size = 0,
+        .number_of_files = 0,
+        .permission = {
+            .read = {"t0", "t1"},
+            .write = {"t0"}
+        }
+    }
+};
+
 
 char* strip(char* str) {
     // Find the first non-whitespace character
@@ -250,10 +359,7 @@ int main()
             commands_count++;
         }
 
-        // Print the commands stored in the commands array
-        // for (int a = 0; a < i; a++) {
-        //     printf("%s\n", commands[a]);
-        // }
+        
     }
 
 
