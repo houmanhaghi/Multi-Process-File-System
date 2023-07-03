@@ -1,7 +1,4 @@
-process number = 12 
-create file /Shayan/Ali/Reza/note.txt 
-Delete File /Shayan/Note.pdf , create sth
-read File IUST.pdf  , Open file /  
-create file /Shayan/Ali/Reza/note.txt 
-Delete File /Shayan/Note.pdf , create sth
-read File IUST.pdf  , Open file /  
+3, create root/ haaa,  create root/mmd/  NEGIN  , create root/usr/ man bemola ke
+2,read root/ haaa  , read root/usr/ man
+3, update root/ haaa 12 34 56
+5,delete root/mmd/ NEGIN

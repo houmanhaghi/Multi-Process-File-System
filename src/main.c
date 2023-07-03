@@ -9,6 +9,12 @@
 #include <sys/stat.h>
 
 
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir(path, mode) _mkdir(path)
+#endif
+
+
 #define MAX_LINE_LENGTH 256
 #define STRING_ARRAY_SIZE 256
 #define CONFIG "configs.txt"
@@ -217,6 +223,21 @@ long int getFolderSize(const char *path) {
 }
 
 
+void create_directory(const char* path) {
+    // Recursively create directories for the given path
+    char* p = strdup(path);
+    for (char* sep = strchr(p + 1, '/'); sep; sep = strchr(sep + 1, '/')) {
+        *sep = '\0';
+#ifdef _WIN32
+        mkdir(p);
+#else
+        mkdir(p, 0766); // Unix-style permissions
+#endif
+        *sep = '/';
+    }
+    free(p);
+}
+
 
 
 void update_meta()
@@ -278,27 +299,115 @@ void update_meta()
 
 
 // implement function to do CRUD tasks
-void create_file()
+void create_file(char* path, char* fileName, char* write_string )
 {
+    if (strcmp(write_string, "\"\"") == 0)
+        write_string = "";
+
+    FILE *file;
+    char fullPath[STRING_ARRAY_SIZE];
+    if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
+        strcat(fullPath, "/");
+        strcat(fullPath, (char*) path);
+        create_directory(fullPath);
+        strcat(fullPath, (char*) fileName);
+    } else {
+        perror("getcwd error");
+        exit(1);
+    }
+
+    file = fopen(fullPath, "w");
+    if (file == NULL) {
+        perror("Error opening the file");
+        printf("%s", fullPath);
+        exit(1);
+    }
+
+    fprintf(file, "%s\n", (char *)write_string);
+
+    fclose(file);
 
 }
 
 
-void read_file()
+void read_file(char* path, char* fileName)
 {
+    FILE *file;
+    char fullPath[STRING_ARRAY_SIZE];
+    if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
+        strcat(fullPath, "/");
+        strcat(fullPath, (char*) path);
+        strcat(fullPath, (char*) fileName);
+    } else {
+        perror("getcwd error");
+        exit(1);
+    }
+
+    file = fopen(fullPath, "r");
+    if (file == NULL) {
+        perror("Error opening the file");
+        printf("%s", fullPath);
+        exit(1);
+    }
+
+    char buffer[STRING_ARRAY_SIZE];
+    while (fscanf(file, "%99[^\n]\n", buffer) == 1) {
+        // Process the line read from the file
+        printf("%s\n", buffer);
+    }
+
+    fclose(file);
+}
+
+
+void update_file(char* path, char* fileName, char* append_string )
+{
+    if (strcmp(append_string, "\"\"") == 0)
+        append_string = "";
+
+    // append file in here
+    FILE *file;
+    char fullPath[STRING_ARRAY_SIZE];
+    if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
+        strcat(fullPath, "/");
+        strcat(fullPath, (char*) path);
+        strcat(fullPath, (char*) fileName);
+    } else {
+        perror("getcwd error");
+        exit(1);
+    }
+
+    file = fopen(fullPath, "a");
+    if (file == NULL) {
+        perror("Error opening the file");
+        printf("%s", fullPath);
+        exit(1);
+    }
+
+    fprintf(file, "%s\n", (char *)append_string);
+
+    fclose(file);
 
 }
 
 
-void update_file()
+void delete_file(char* path, char* fileName)
 {
+    char fullPath[STRING_ARRAY_SIZE];
+    if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
+        strcat(fullPath, "/");
+        strcat(fullPath, (char*) path);
+        strcat(fullPath, (char*) fileName);
+    } else {
+        perror("getcwd error");
+        exit(1);
+    }
 
-}
-
-
-void delete_file()
-{
-
+    if (remove(fullPath) == 0) {
+        printf("File %s deleted successfully.\n", fullPath);
+    } else {
+        perror("Error deleting the file");
+    }
 }
 
 
@@ -306,6 +415,9 @@ int main()
 {
     // update meta date of each directory
     update_meta();
+
+
+    // Implementing help
 
 
     // read commands from configs.txt
@@ -382,13 +494,13 @@ int main()
             }
 
             if (strcmp(order[0], "create") == 0){
-                create_file(order[1], order[2]);
+                create_file(order[1], order[2], order[3]);
             }
             else if (strcmp(order[0], "read") == 0){
                 read_file(order[1], order[2]);
             }
             else if (strcmp(order[0], "update") == 0){
-                update_file(order[1], order[2]);
+                update_file(order[1], order[2], order[3]);
             }
             else if (strcmp(order[0], "delete") == 0){
                 delete_file(order[1], order[2]);
