@@ -358,10 +358,52 @@ int main()
             i++;
             commands_count++;
         }
+        commands_count--;  
 
-        
+        // create a process to do tasks
+        char ptype[STRING_ARRAY_SIZE];
+        strcpy(ptype, commands[0]);
+
+        for (int task = 1 ; task <= commands_count ; task++)
+        {
+            char order[4][STRING_ARRAY_SIZE];
+            const char space_delimiter[] = " ";
+            char* stripped_task = strip(commands[task]);
+            char* Stoken = strtok(stripped_task, space_delimiter);
+
+            char temp_buffer[STRING_ARRAY_SIZE];
+            int j = 0;
+            while (Stoken != NULL && j < STRING_ARRAY_SIZE) {
+            char* stripped_task = strip(Stoken);
+            strcpy(temp_buffer, stripped_task);
+            strcpy(order[j], temp_buffer);
+            Stoken = strtok(NULL, space_delimiter);
+            j++;
+            }
+
+            if (strcmp(order[0], "create") == 0){
+                create_file(order[1], order[2]);
+            }
+            else if (strcmp(order[0], "read") == 0){
+                read_file(order[1], order[2]);
+            }
+            else if (strcmp(order[0], "update") == 0){
+                update_file(order[1], order[2]);
+            }
+            else if (strcmp(order[0], "delete") == 0){
+                delete_file(order[1], order[2]);
+            }
+            else{
+                perror("Wrong Inputes");
+                exit(1);
+            }
+
+        }
+
+
+
+
     }
-
 
     return 0;
 }
