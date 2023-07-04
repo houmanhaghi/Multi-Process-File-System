@@ -297,7 +297,6 @@ void update_meta()
 
 
 
-
 // implement function to do CRUD tasks
 void create_file(char* path, char* fileName, char* write_string )
 {
@@ -411,13 +410,30 @@ void delete_file(char* path, char* fileName)
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
     // update meta date of each directory
     update_meta();
 
 
     // Implementing help
+    if (argc == 2 && (strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"--help") ==0)){
+        printf("FiSys: multi process file handling\n");
+        printf("Usage: ./FiSys\n");
+        printf("to handle this program, you should write your commands in configs.txt.\n");
+        printf("each line introduce a separate type process, that declared in first argument.\n");
+        printf("after that, commands run concurently. we have 4 type of commands:\n\n");
+        printf("CRUD\n");
+        printf("C: create path fileName [write_string]\n");
+        printf("R: read   path fileName\n");
+        printf("U: update path fileName [append_string]\n");
+        printf("D: delete path fileName\n\n");
+        printf("each time you run the program, all directories will be updated.\n");
+        printf("whole of the changes will be occure in the root directory that has implemented in the project directory.");
+
+        printf("\n");
+        exit(0);
+    }
 
 
     // read commands from configs.txt
