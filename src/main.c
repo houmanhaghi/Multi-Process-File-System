@@ -333,25 +333,6 @@ long int getFolderSize(const char *path) {
 }
 
 
-// void create_directory(char* path) {
-//     printf("I am in...");
-//     // Recursively create directories for the given path
-//     strcat(path, "/");
-//     printf("%s", path);
-//     char* p = strdup(path);
-//     for (char* sep = strchr(p + 1, '/'); sep; sep = strchr(sep + 1, '/')) {
-//         *sep = '\0';
-// #ifdef _WIN32
-//         mkdir(p);
-// #else
-//         mkdir(p, 0766); // Unix-style permissions
-// #endif
-//         *sep = '/';
-//     }
-//     free(p);
-// }
-
-
 int makeDirectory(const char *path) {
     #if defined(_WIN32)
     // For Windows, use _mkdir() function
@@ -361,25 +342,6 @@ int makeDirectory(const char *path) {
     return mkdir(path, 0777); // 0777 gives read, write, and execute permissions to all users
     #endif
 }
-
-
-// void create_directory(const char* path) {
-//     // Create directories recursively for the given path
-//     char temp[STRING_ARRAY_SIZE];
-//     strcpy(temp, path);
-//     char* p = temp;
-//     char* sep = strchr(p + 1, '/');
-//     while (sep) {
-//         *sep = '\0';
-// #ifdef _WIN32
-//         mkdir(p);
-// #else
-//         mkdir(p, 0766); // Unix-style permissions
-// #endif
-//         *sep = '/';
-//         sep = strchr(sep + 1, '/');
-//     }
-// }
 
 
 void update_meta()
@@ -474,7 +436,8 @@ void create_file(char* path, char* fileName, char* write_string )
     fprintf(file, "%s\n", (char *)write_string);
 
     fclose(file);
-
+    
+    printf("File %s created successfully\n", fullPath);
     update_meta();
 
 }
@@ -487,7 +450,7 @@ void read_file(char* path, char* fileName)
     if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
         strcat(fullPath, "/");
         strcat(fullPath, (char*) path);
-        strcat(fullPath, "/");
+        // strcat(fullPath, "/");
         strcat(fullPath, (char*) fileName);
     } else {
         printf("getcwd error\n");
@@ -499,12 +462,15 @@ void read_file(char* path, char* fileName)
     }
 
     // printf("%s\n", fullPath);
+
+    printf("File %s read successfully: \n", fullPath);
     char temp_line[STRING_ARRAY_SIZE];
     while (fgets(temp_line, sizeof(temp_line), file) != NULL) {
         printf("%s", temp_line);
     }
 
     fclose(file);
+    
 }
 
 
@@ -530,6 +496,9 @@ void update_file(char* path, char* fileName, char* append_string )
     fprintf(file, "%s\n", (char *)append_string);
 
     fclose(file);
+
+    printf("File %s updated successfully: \n", fullPath);
+    
     update_meta();
 
 }
@@ -549,7 +518,7 @@ void delete_file(char* path, char* fileName)
     // printf("%s", fullPath);
 
     if (remove(fullPath) == 0) {
-        printf("File %s deleted successfully.\n", fullPath);
+        printf("File %s deleted successfully: \n", fullPath);
     } else {
         perror("Error deleting the file");
     }
