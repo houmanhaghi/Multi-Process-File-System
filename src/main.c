@@ -4,15 +4,16 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 
-#ifdef _WIN32
-#include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
-#endif
+// #ifdef _WIN32
+// #include <direct.h>
+// #define mkdir(path, mode) _mkdir(path)
+// #endif
 
 
 #define MAX_LINE_LENGTH 256
@@ -45,77 +46,77 @@ struct meta_data {
 
 struct meta_data meta[9] ={
     {
-        .dir_path = "/root/",
+        .dir_path = "root/",
         .total_size = 100000000,
         .free_size = 0,
         .number_of_files = 8,
         .permission = {
-            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .read = {"t0", "t1", "t2", "t3", "t5"},
             .write = {"t0", "t1", "t2", "t3", "t4"}
         }
     },
     {
-        .dir_path = "/root/bin/",
+        .dir_path = "root/bin/",
         .total_size = 50000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
-            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .read = {"t0", "t1", "t2", "t3", "t5"},
             .write = {"t0", "t1", "t2", "t3"}
         }
     },
     {
-        .dir_path = "/root/dev/",
+        .dir_path = "root/dev/",
         .total_size = 20000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
-            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
-            .write = {"t4", "t5"}
+            .read = {"t0", "t1", "t2", "t3", "t5"},
+            .write = {"t0", "t4"}
         }
     },
     {
-        .dir_path = "/root/etc/",
+        .dir_path = "root/etc/",
         .total_size = 2000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
-            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
+            .read = {"t0", "t1", "t2", "t3", "t5"},
             .write = {"t0", "t1", "t2"}
         }
     },
     {
-        .dir_path = "/root/home/",
+        .dir_path = "root/home/",
         .total_size = 100000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
-            .read = {"t0", "t1", "t2", "t3", "t4", "t5"},
-            .write = {"t1", "t2", "t3"}
+            .read = {"t0", "t1", "t2", "t3", "t5"},
+            .write = {"t0", "t1", "t2", "t3"}
         }
     },
     {
-        .dir_path = "/root/mnt/",
+        .dir_path = "root/mnt/",
         .total_size = 3000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
             .read = {"t0", "t1", "t2", "t3"},
-            .write = {"t2", "t3"}
+            .write = {"t0", "t2", "t3"}
         }
     },
     {
-        .dir_path = "/root/proc/",
+        .dir_path = "root/proc/",
         .total_size = 5000000,
         .free_size = 0,
         .number_of_files = 0,
         .permission = {
-            .read = {"t0", "t1", "t4", "t5"},
+            .read = {"t0", "t1", "t5"},
             .write = {"t0", "t1", "t4"}
         }
     },
     {
-        .dir_path = "/root/tmp/",
+        .dir_path = "root/tmp/",
         .total_size = 25000000,
         .free_size = 0,
         .number_of_files = 0,
@@ -125,7 +126,7 @@ struct meta_data meta[9] ={
         }
     },
     {
-        .dir_path = "/root/usr/",
+        .dir_path = "root/usr/",
         .total_size = 40000000,
         .free_size = 0,
         .number_of_files = 0,
@@ -137,22 +138,79 @@ struct meta_data meta[9] ={
 };
 
 
+char** splitString(const char* input, int* numTokens) {
+    char** tokens = NULL;
+    char* token;
+    char* copy = strdup(input);
+    int count = 0;
+
+    // Count the number of tokens (substrings) in the input string
+    token = strtok(copy, "/");
+    while (token) {
+        count++;
+        token = strtok(NULL, "/");
+    }
+
+    // Allocate memory for the tokens array
+    tokens = (char**)malloc(count * sizeof(char*));
+
+    // Split the input string and store the tokens in the array
+    int i = 0;
+    token = strtok((char*)input, "/");
+    while (token) {
+        tokens[i] = strdup(token);
+        i++;
+        token = strtok(NULL, "/");
+    }
+
+    // Update the numTokens variable with the number of tokens
+    *numTokens = count;
+
+    return tokens;
+}
+
+
 int have_permission(char* ptype, char* path, int read , int write)
 {
+    // printf("%s\n", path);
     if (write == 1){
+        bool flag = false;
         for (int i = 0 ; i < len(meta) ; i++){
+            
             if (strcmp(meta[i].dir_path, path) == 0){
+                flag = true;
                 for (int j = 0 ; j < len(meta[i].permission.write) ; j++){
                     if (strcmp(ptype, meta[i].permission.write[j]) == 0)
                         return 1;
                 }
             }
-            return 0;
         }
+        if (!flag){
+                int numTokens;
+                int last_in_path;
+                
+                char** tokens = splitString(path, &numTokens);
+                for (int j = 0 ; j < len(meta) ; j++){
+                    char** last_path = splitString(meta[j].dir_path, &last_in_path);
+                    for (int i = numTokens-1 ; i >= 0 ; i-- ){
+                        // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
+                        if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
+                            return 1;
+                    }
+                }
+
+                // Free allocated memory
+                for (int i = 0; i < numTokens; i++) {
+                    free(tokens[i]);
+                }
+                free(tokens);
+        }
+        return 0;
     }
 
 
     else if (read == 1){
+        bool flag = false;
         for (int i = 0 ; i < len(meta) ; i++){
             if (strcmp(meta[i].dir_path, path) == 0){
                 for (int j = 0 ; j < len(meta[i].permission.read) ; j++){
@@ -160,8 +218,28 @@ int have_permission(char* ptype, char* path, int read , int write)
                         return 1;
                 }
             }
-            return 0;
         }
+        if (!flag){
+                int numTokens;
+                int last_in_path;
+                
+                char** tokens = splitString(path, &numTokens);
+                for (int j = 0 ; j < len(meta) ; j++){
+                    char** last_path = splitString(meta[j].dir_path, &last_in_path);
+                    for (int i = numTokens-1 ; i >= 0 ; i-- ){
+                        // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
+                        if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
+                            return 1;
+                    }
+                }
+
+                // Free allocated memory
+                for (int i = 0; i < numTokens; i++) {
+                    free(tokens[i]);
+                }
+                free(tokens);
+        }
+        return 0;
     }
 
 
@@ -255,40 +333,78 @@ long int getFolderSize(const char *path) {
 }
 
 
-void create_directory(const char* path) {
-    // Recursively create directories for the given path
-    char* p = strdup(path);
-    for (char* sep = strchr(p + 1, '/'); sep; sep = strchr(sep + 1, '/')) {
-        *sep = '\0';
-#ifdef _WIN32
-        mkdir(p);
-#else
-        mkdir(p, 0766); // Unix-style permissions
-#endif
-        *sep = '/';
-    }
-    free(p);
+// void create_directory(char* path) {
+//     printf("I am in...");
+//     // Recursively create directories for the given path
+//     strcat(path, "/");
+//     printf("%s", path);
+//     char* p = strdup(path);
+//     for (char* sep = strchr(p + 1, '/'); sep; sep = strchr(sep + 1, '/')) {
+//         *sep = '\0';
+// #ifdef _WIN32
+//         mkdir(p);
+// #else
+//         mkdir(p, 0766); // Unix-style permissions
+// #endif
+//         *sep = '/';
+//     }
+//     free(p);
+// }
+
+
+int makeDirectory(const char *path) {
+    #if defined(_WIN32)
+    // For Windows, use _mkdir() function
+    return _mkdir(path);
+    #else
+    // For Unix-like systems, use mkdir() function
+    return mkdir(path, 0777); // 0777 gives read, write, and execute permissions to all users
+    #endif
 }
 
+
+// void create_directory(const char* path) {
+//     // Create directories recursively for the given path
+//     char temp[STRING_ARRAY_SIZE];
+//     strcpy(temp, path);
+//     char* p = temp;
+//     char* sep = strchr(p + 1, '/');
+//     while (sep) {
+//         *sep = '\0';
+// #ifdef _WIN32
+//         mkdir(p);
+// #else
+//         mkdir(p, 0766); // Unix-style permissions
+// #endif
+//         *sep = '/';
+//         sep = strchr(sep + 1, '/');
+//     }
+// }
 
 
 void update_meta()
 {
     char path[STRING_ARRAY_SIZE]; 
+    for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+            path[x] = '\0';
     if (getcwd(path, sizeof(path)) != NULL) {
     } else {
-        perror("getcwd error");
-        exit(1);
+        printf("getcwd error: %s", path);
     }
 
     int index = 0;
     while(strcmp(meta[index].dir_path, "\0") != 0)
     {
         FILE *file;
-        char directory_path[STRING_ARRAY_SIZE] = "";
+        char directory_path[STRING_ARRAY_SIZE];
+        for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+            directory_path[x] = '\0';
         strcat(directory_path, path);
+        strcat(directory_path ,"/");
         strcat(directory_path, meta[index].dir_path);
-        char meta_path[STRING_ARRAY_SIZE] = "";
+        char meta_path[STRING_ARRAY_SIZE];
+        for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+            meta_path[x] = '\0';
         strcat(meta_path ,directory_path);
         strcat(meta_path, ".meta");
 
@@ -297,8 +413,7 @@ void update_meta()
         
         // Check if the file was opened successfully
         if (file == NULL) {
-        perror("Error opening the file");
-        exit(1);
+        printf("Error opening the file: %s\n", meta_path);
         }
 
         long int current_size = getFolderSize(directory_path);
@@ -336,22 +451,24 @@ void create_file(char* path, char* fileName, char* write_string )
         write_string = "";
 
     FILE *file;
-    char fullPath[STRING_ARRAY_SIZE];
+    char fullPath[100*STRING_ARRAY_SIZE];
+    
     if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
         strcat(fullPath, "/");
         strcat(fullPath, (char*) path);
-        create_directory(fullPath);
+        if (makeDirectory(fullPath) == 0)
+            {
+                
+            }
         strcat(fullPath, (char*) fileName);
     } else {
-        perror("getcwd error");
+        printf("getcwd error: %s\n", fullPath);
         exit(1);
     }
-
+    
     file = fopen(fullPath, "w");
     if (file == NULL) {
-        perror("Error opening the file");
-        printf("%s", fullPath);
-        exit(1);
+        printf("Error opening the file: %s\n", fullPath);
     }
 
     fprintf(file, "%s\n", (char *)write_string);
@@ -368,23 +485,22 @@ void read_file(char* path, char* fileName)
     if (getcwd(fullPath, sizeof(fullPath)) != NULL) {
         strcat(fullPath, "/");
         strcat(fullPath, (char*) path);
+        strcat(fullPath, "/");
         strcat(fullPath, (char*) fileName);
     } else {
         perror("getcwd error");
         exit(1);
     }
-
+    // printf("%s\n", fullPath);
     file = fopen(fullPath, "r");
     if (file == NULL) {
-        perror("Error opening the file");
-        printf("%s", fullPath);
-        exit(1);
+        printf("Error opening the files: %s\n", fullPath);
     }
 
-    char buffer[STRING_ARRAY_SIZE];
-    while (fscanf(file, "%99[^\n]\n", buffer) == 1) {
-        // Process the line read from the file
-        printf("%s\n", buffer);
+    // printf("%s\n", fullPath);
+    char temp_line[STRING_ARRAY_SIZE];
+    while (fgets(temp_line, sizeof(temp_line), file) != NULL) {
+        printf("%s\n", temp_line);
     }
 
     fclose(file);
@@ -407,12 +523,11 @@ void update_file(char* path, char* fileName, char* append_string )
         perror("getcwd error");
         exit(1);
     }
+    // printf("%s", fullPath);
 
     file = fopen(fullPath, "a");
     if (file == NULL) {
-        perror("Error opening the file");
-        printf("%s", fullPath);
-        exit(1);
+        printf("Error opening the file: %s\n", fullPath);
     }
 
     fprintf(file, "%s\n", (char *)append_string);
@@ -433,6 +548,7 @@ void delete_file(char* path, char* fileName)
         perror("getcwd error");
         exit(1);
     }
+    // printf("%s", fullPath);
 
     if (remove(fullPath) == 0) {
         printf("File %s deleted successfully.\n", fullPath);
@@ -471,19 +587,24 @@ int main(int argc, char* argv[])
     // read commands from configs.txt
     FILE *file;
     char line[MAX_LINE_LENGTH][STRING_ARRAY_SIZE];
+    for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                for (int y = 0 ; y < STRING_ARRAY_SIZE ; y++)
+                 line[y][x] = '\0';
+
     char config_path[STRING_ARRAY_SIZE]; 
+    for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+            config_path[x] = '\0';
     if (getcwd(config_path, sizeof(config_path)) != NULL) {
         strcat(config_path, "/src/");
         strcat(config_path, CONFIG);
     } else {
-        perror("getcwd error");
-        exit(1);
+        printf("getcwd error: %s", config_path);
+        
     }
 
     file = fopen(config_path, "r");
     if (file == NULL) {
-        perror("Error opening the file");
-        return 1;
+        printf("Error opening the file: %s\n", config_path);
     }
     
     // Read lines from the file until the end
@@ -498,7 +619,11 @@ int main(int argc, char* argv[])
     // create separate process for each line of congigs
     for (int p = 0; p < lineIndex; p++) {
         // Separate each command
-        char commands[STRING_ARRAY_SIZE][STRING_ARRAY_SIZE] = {};
+        char commands[STRING_ARRAY_SIZE][STRING_ARRAY_SIZE];
+        for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                for (int y = 0 ; y < STRING_ARRAY_SIZE ; y++)
+                 commands[y][x] = '\0';
+
         const char delimiter[] = ",";
 
         // Strip leading and trailing whitespace from the line
@@ -508,6 +633,8 @@ int main(int argc, char* argv[])
         char* token = strtok(stripped_line, delimiter);
         int commands_count = 0; // Initialize to 0 since no tokens are found yet
         char token_buffer[STRING_ARRAY_SIZE];
+        for (int y = 0 ; y < STRING_ARRAY_SIZE ; y++)
+                 token_buffer[y]= '\0';
 
         int i = 0;
         while (token != NULL && i < STRING_ARRAY_SIZE) {
@@ -522,16 +649,23 @@ int main(int argc, char* argv[])
 
         // create a process to do tasks
         char ptype[STRING_ARRAY_SIZE];
+        for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+            ptype[x] = '\0';
         strcpy(ptype, commands[0]);
 
         for (int task = 1 ; task <= commands_count ; task++)
         {
-            char order[4][STRING_ARRAY_SIZE];
+            char order[32][STRING_ARRAY_SIZE];
+            for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                for (int y = 0 ; y < 32 ; y++)
+                 order[y][x] = '\0';
             const char space_delimiter[] = " ";
             char* stripped_task = strip(commands[task]);
             char* Stoken = strtok(stripped_task, space_delimiter);
 
             char temp_buffer[STRING_ARRAY_SIZE];
+            for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                 temp_buffer[x] = '\0';
             int j = 0;
             while (Stoken != NULL && j < STRING_ARRAY_SIZE) {
             char* stripped_task = strip(Stoken);
@@ -542,28 +676,60 @@ int main(int argc, char* argv[])
             }
 
             if (strcmp(order[0], "create") == 0){
+                char nt[STRING_ARRAY_SIZE];
+                strcpy(nt, order[1]) ;
                 if (have_permission(ptype, order[1], 0, 1)){
-                    create_file(order[1], order[2], order[3]);
+                    strcpy(order[1], nt);
+                    char to_send[STRING_ARRAY_SIZE];
+                    for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                        to_send[x] = '\0';
+
+                    int counter = 3;
+                    while (strcmp(order[counter], "\0") != 0 ){
+                        strcat(to_send, order[counter]);
+                        strcat(to_send, " ");
+                        counter++;
+                    }
+                    create_file(order[1], order[2], to_send);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
                 }
             }
             else if (strcmp(order[0], "read") == 0 ){
+                char nt[STRING_ARRAY_SIZE];
+                strcpy(nt, order[1]) ;
                 if (have_permission(ptype, order[1], 1, 0)){
+                    strcpy(order[1], nt);
                     read_file(order[1], order[2]);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
                 }
             }
             else if (strcmp(order[0], "update") == 0 ){
+                char nt[STRING_ARRAY_SIZE];
+                strcpy(nt, order[1]) ;
                 if (have_permission(ptype, order[1], 0, 1)){
-                    update_file(order[1], order[2], order[3]);
+                    strcpy(order[1], nt);
+                    char to_send[STRING_ARRAY_SIZE];
+                    for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
+                        to_send[x] = '\0';
+
+                    int counter = 3;
+                    while (strcmp(order[counter], "\0") != 0 ){
+                        strcat(to_send, order[counter]);
+                        strcat(to_send, " ");
+                        counter++;
+                    }
+                    update_file(order[1], order[2], to_send);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
                 }
             }
             else if (strcmp(order[0], "delete") == 0){
+                char nt[STRING_ARRAY_SIZE];
+                strcpy(nt, order[1]) ;
                 if (have_permission(ptype, order[1], 0, 1)){
+                    strcpy(order[1], nt);
                     delete_file(order[1], order[2]);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
@@ -579,3 +745,23 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// I have start IT>
+
+
+
