@@ -137,6 +137,38 @@ struct meta_data meta[9] ={
 };
 
 
+int have_permission(char* ptype, char* path, int read , int write)
+{
+    if (write == 1){
+        for (int i = 0 ; i < len(meta) ; i++){
+            if (strcmp(meta[i].dir_path, path) == 0){
+                for (int j = 0 ; j < len(meta[i].permission.write) ; j++){
+                    if (strcmp(ptype, meta[i].permission.write[j]) == 0)
+                        return 1;
+                }
+            }
+            return 0;
+        }
+    }
+
+
+    else if (read == 1){
+        for (int i = 0 ; i < len(meta) ; i++){
+            if (strcmp(meta[i].dir_path, path) == 0){
+                for (int j = 0 ; j < len(meta[i].permission.read) ; j++){
+                    if (strcmp(ptype, meta[i].permission.read[j]) == 0)
+                        return 1;
+                }
+            }
+            return 0;
+        }
+    }
+
+
+    return 0;
+}
+
+
 char* strip(char* str) {
     // Find the first non-whitespace character
     while (isspace((unsigned char)*str))
@@ -510,26 +542,38 @@ int main(int argc, char* argv[])
             }
 
             if (strcmp(order[0], "create") == 0){
-                create_file(order[1], order[2], order[3]);
+                if (have_permission(ptype, order[1], 0, 1)){
+                    create_file(order[1], order[2], order[3]);
+                }else{
+                    printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
+                }
             }
-            else if (strcmp(order[0], "read") == 0){
-                read_file(order[1], order[2]);
+            else if (strcmp(order[0], "read") == 0 ){
+                if (have_permission(ptype, order[1], 1, 0)){
+                    read_file(order[1], order[2]);
+                }else{
+                    printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
+                }
             }
-            else if (strcmp(order[0], "update") == 0){
-                update_file(order[1], order[2], order[3]);
+            else if (strcmp(order[0], "update") == 0 ){
+                if (have_permission(ptype, order[1], 0, 1)){
+                    update_file(order[1], order[2], order[3]);
+                }else{
+                    printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
+                }
             }
             else if (strcmp(order[0], "delete") == 0){
-                delete_file(order[1], order[2]);
+                if (have_permission(ptype, order[1], 0, 1)){
+                    delete_file(order[1], order[2]);
+                }else{
+                    printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
+                }
             }
             else{
-                perror("Wrong Inputes");
-                exit(1);
+                printf("Wrong Inputes: %s %s %s\n", order[0], order[1], order[2]);
             }
 
         }
-
-
-
 
     }
 
