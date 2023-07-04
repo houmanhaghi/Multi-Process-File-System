@@ -174,43 +174,43 @@ int have_permission(char* ptype, char* path, int read , int write)
 {
     // printf("%s\n", path);
     if (write == 1){
-        bool flag = false;
+        // bool flag = false;
         for (int i = 0 ; i < len(meta) ; i++){
             
             if (strcmp(meta[i].dir_path, path) == 0){
-                flag = true;
+                // flag = true;
                 for (int j = 0 ; j < len(meta[i].permission.write) ; j++){
                     if (strcmp(ptype, meta[i].permission.write[j]) == 0)
                         return 1;
                 }
             }
         }
-        if (!flag){
-                int numTokens;
-                int last_in_path;
+        // if (!flag){
+        //         int numTokens;
+        //         int last_in_path;
                 
-                char** tokens = splitString(path, &numTokens);
-                for (int j = 0 ; j < len(meta) ; j++){
-                    char** last_path = splitString(meta[j].dir_path, &last_in_path);
-                    for (int i = numTokens-1 ; i >= 0 ; i-- ){
-                        // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
-                        if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
-                            return 1;
-                    }
-                }
+        //         char** tokens = splitString(path, &numTokens);
+        //         for (int j = 0 ; j < len(meta) ; j++){
+        //             char** last_path = splitString(meta[j].dir_path, &last_in_path);
+        //             for (int i = numTokens-1 ; i >= 0 ; i-- ){
+        //                 // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
+        //                 if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
+        //                     return 1;
+        //             }
+        //         }
 
-                // Free allocated memory
-                for (int i = 0; i < numTokens; i++) {
-                    free(tokens[i]);
-                }
-                free(tokens);
-        }
+        //         // Free allocated memory
+        //         for (int i = 0; i < numTokens; i++) {
+        //             free(tokens[i]);
+        //         }
+        //         free(tokens);
+        // }
         return 0;
     }
 
 
     else if (read == 1){
-        bool flag = false;
+        // bool flag = false;
         for (int i = 0 ; i < len(meta) ; i++){
             if (strcmp(meta[i].dir_path, path) == 0){
                 for (int j = 0 ; j < len(meta[i].permission.read) ; j++){
@@ -219,26 +219,26 @@ int have_permission(char* ptype, char* path, int read , int write)
                 }
             }
         }
-        if (!flag){
-                int numTokens;
-                int last_in_path;
+        // if (!flag){
+        //         int numTokens;
+        //         int last_in_path;
                 
-                char** tokens = splitString(path, &numTokens);
-                for (int j = 0 ; j < len(meta) ; j++){
-                    char** last_path = splitString(meta[j].dir_path, &last_in_path);
-                    for (int i = numTokens-1 ; i >= 0 ; i-- ){
-                        // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
-                        if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
-                            return 1;
-                    }
-                }
+        //         char** tokens = splitString(path, &numTokens);
+        //         for (int j = 0 ; j < len(meta) ; j++){
+        //             char** last_path = splitString(meta[j].dir_path, &last_in_path);
+        //             for (int i = numTokens-1 ; i >= 0 ; i-- ){
+        //                 // printf("== %s :: %s == ||", last_path[last_in_path-1], tokens[i]);
+        //                 if (strcmp(last_path[last_in_path-1],tokens[i]) == 0)
+        //                     return 1;
+        //             }
+        //         }
 
-                // Free allocated memory
-                for (int i = 0; i < numTokens; i++) {
-                    free(tokens[i]);
-                }
-                free(tokens);
-        }
+        //         // Free allocated memory
+        //         for (int i = 0; i < numTokens; i++) {
+        //             free(tokens[i]);
+        //         }
+        //         free(tokens);
+        // }
         return 0;
     }
 
@@ -287,7 +287,7 @@ int countFilesRecursively(const char* path) {
 
         struct stat statBuf;
         if (stat(entryPath, &statBuf) == -1) {
-            perror("stat");
+            printf("stat error\n");
             continue;
         }
 
@@ -389,7 +389,7 @@ void update_meta()
             path[x] = '\0';
     if (getcwd(path, sizeof(path)) != NULL) {
     } else {
-        printf("getcwd error: %s", path);
+        printf("getcwd error: %s\n", path);
     }
 
     int index = 0;
@@ -419,7 +419,6 @@ void update_meta()
         long int current_size = getFolderSize(directory_path);
         if (current_size == -1) {
             printf("Error: Unable to get the folder size.\n");
-            exit(1);
         }
 
 
@@ -432,6 +431,10 @@ void update_meta()
 
         fprintf(file, "Free space: %lu bytes\n", meta[index].total_size - current_size );
         meta[index].free_size = meta[index].total_size - current_size;
+
+        if (meta[index].total_size - current_size < 0){
+            printf("Storage Warnning! Storage of directory: %s  is out of range", directory_path);
+        }
 
         fprintf(file, "Number of files: %d\n", countFilesRecursively(directory_path)-1);
         meta[index].number_of_files = countFilesRecursively(directory_path)-1;
@@ -447,8 +450,6 @@ void update_meta()
 // implement function to do CRUD tasks
 void create_file(char* path, char* fileName, char* write_string )
 {
-    if (strcmp(write_string, "\"\"") == 0)
-        write_string = "";
 
     FILE *file;
     char fullPath[100*STRING_ARRAY_SIZE];
@@ -463,7 +464,6 @@ void create_file(char* path, char* fileName, char* write_string )
         strcat(fullPath, (char*) fileName);
     } else {
         printf("getcwd error: %s\n", fullPath);
-        exit(1);
     }
     
     file = fopen(fullPath, "w");
@@ -474,6 +474,8 @@ void create_file(char* path, char* fileName, char* write_string )
     fprintf(file, "%s\n", (char *)write_string);
 
     fclose(file);
+
+    update_meta();
 
 }
 
@@ -488,8 +490,7 @@ void read_file(char* path, char* fileName)
         strcat(fullPath, "/");
         strcat(fullPath, (char*) fileName);
     } else {
-        perror("getcwd error");
-        exit(1);
+        printf("getcwd error\n");
     }
     // printf("%s\n", fullPath);
     file = fopen(fullPath, "r");
@@ -500,7 +501,7 @@ void read_file(char* path, char* fileName)
     // printf("%s\n", fullPath);
     char temp_line[STRING_ARRAY_SIZE];
     while (fgets(temp_line, sizeof(temp_line), file) != NULL) {
-        printf("%s\n", temp_line);
+        printf("%s", temp_line);
     }
 
     fclose(file);
@@ -509,8 +510,6 @@ void read_file(char* path, char* fileName)
 
 void update_file(char* path, char* fileName, char* append_string )
 {
-    if (strcmp(append_string, "\"\"") == 0)
-        append_string = "";
 
     // append file in here
     FILE *file;
@@ -520,10 +519,8 @@ void update_file(char* path, char* fileName, char* append_string )
         strcat(fullPath, (char*) path);
         strcat(fullPath, (char*) fileName);
     } else {
-        perror("getcwd error");
-        exit(1);
+        printf("getcwd error\n");
     }
-    // printf("%s", fullPath);
 
     file = fopen(fullPath, "a");
     if (file == NULL) {
@@ -533,6 +530,7 @@ void update_file(char* path, char* fileName, char* append_string )
     fprintf(file, "%s\n", (char *)append_string);
 
     fclose(file);
+    update_meta();
 
 }
 
@@ -545,9 +543,9 @@ void delete_file(char* path, char* fileName)
         strcat(fullPath, (char*) path);
         strcat(fullPath, (char*) fileName);
     } else {
-        perror("getcwd error");
-        exit(1);
+        printf("getcwd error\n");
     }
+
     // printf("%s", fullPath);
 
     if (remove(fullPath) == 0) {
@@ -555,6 +553,7 @@ void delete_file(char* path, char* fileName)
     } else {
         perror("Error deleting the file");
     }
+    update_meta();
 }
 
 
@@ -598,7 +597,7 @@ int main(int argc, char* argv[])
         strcat(config_path, "/src/");
         strcat(config_path, CONFIG);
     } else {
-        printf("getcwd error: %s", config_path);
+        printf("getcwd error: %s\n", config_path);
         
     }
 
@@ -678,7 +677,7 @@ int main(int argc, char* argv[])
             if (strcmp(order[0], "create") == 0){
                 char nt[STRING_ARRAY_SIZE];
                 strcpy(nt, order[1]) ;
-                if (have_permission(ptype, order[1], 0, 1)){
+                if (true){    //if (have_permission(ptype, order[1], 0, 1)){
                     strcpy(order[1], nt);
                     char to_send[STRING_ARRAY_SIZE];
                     for (int x = 0 ; x < STRING_ARRAY_SIZE ; x++)
@@ -690,6 +689,8 @@ int main(int argc, char* argv[])
                         strcat(to_send, " ");
                         counter++;
                     }
+                    if (to_send[0] == '\0')
+                        strcpy(to_send, "");
                     create_file(order[1], order[2], to_send);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
@@ -720,6 +721,8 @@ int main(int argc, char* argv[])
                         strcat(to_send, " ");
                         counter++;
                     }
+                    if (to_send[0] == '\0')
+                        strcpy(to_send, "");
                     update_file(order[1], order[2], to_send);
                 }else{
                     printf("Access Denied: %s %s %s\n", order[0], order[1], order[2]);
@@ -745,23 +748,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// I have start IT>
-
-
-

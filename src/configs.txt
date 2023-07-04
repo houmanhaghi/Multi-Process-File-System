@@ -1,6 +1,13 @@
 t0, create root/ haaa 1 2 3 4 5,  create root/tmp/  ngnx  , create root/new/ man bemola ke
-t0, read root/ haaa ,  read root/tmp/  ngnx  , read root/new/ man
-t0, update root/ haaa 4 3 2 1,  update root/tmp/  is my  , update root/new/ man appending to me
+t0, read root/ haaa, read root/tmp/ ngnx , read root/new/ man
+t0, update root/ haaa 4 3 2 1,  update root/tmp/  ngnx is my  , update root/new/ man appending to me
 t0, read root/ haaa ,  read root/tmp/  ngnx  , read root/new/ man
 t0, delete root/ haaa ,  delete root/tmp/  ngnx  , delete root/new/ man
+
+
+t5, create root/ haaa 1 2 3 4 5,  create root/tmp/  ngnx  , create root/new/ man bemola ke
+t4, read root/ haaa ,  read root/tmp/  ngnx  , read root/new/ man
+t5, update root/ haaa 4 3 2 1,  update root/tmp/  is my  , update root/new/ man appending to me
+t4, read root/ haaa ,  read root/tmp/  ngnx  , read root/new/ man
+t5, delete root/ haaa ,  delete root/tmp/  ngnx  , delete root/new/ man
 
